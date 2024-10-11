@@ -1,12 +1,29 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { Image } from 'react-native';
+import { Image, TouchableOpacity } from 'react-native';
 import Profile from '../../pages/screens/Profile';
 import Calendar from '../../pages/screens/Calendar';
 import SubscribCalendar from '../../pages/screens/SubscribCalendar';
 import CustomDrawerContent from './CustomDrawerContent'; // Import the custom drawer
+import { getFontFamily } from '../../utils/fontFamily';
+import { useNavigation } from '@react-navigation/native';
+
 
 const Drawer = createDrawerNavigator();
+
+const CustomHamburgerIcon = () => {
+  const navigation = useNavigation(); // Hook to access the navigation object
+
+  return (
+    <TouchableOpacity onPress={() => navigation.openDrawer()}>
+      <Image
+        source={require('../../assets/images/hamburger.png')} // Path to your custom PNG icon
+        style={{ width: 24, height: 24, marginLeft: 24, resizeMode: "contain" }} // Adjust size and margin as needed
+      />
+    </TouchableOpacity>
+  );
+};
+
 
 const DrawerNavigation = () => {
   return (
@@ -17,7 +34,18 @@ const DrawerNavigation = () => {
         headerStyle: {
           backgroundColor: '#5779B8',
         },
+        headerTitleStyle: {
+          fontSize: 21,       // Change this to your preferred font size
+          fontFamily: getFontFamily("bold"),  // Use your custom font family function
+          color: '#ffffff',
+        },
         headerTintColor: '#fff',
+        drawerLabelStyle: {  // Apply the global text style for all drawer items
+          fontSize: 13,
+          fontFamily: getFontFamily("medium"),
+          color: '#000000',  // Custom text color for the drawer items
+        },
+        headerLeft: () => <CustomHamburgerIcon />
       }}
     >
       {/* Profile Screen with Icon */}

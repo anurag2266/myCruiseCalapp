@@ -2,6 +2,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { getFontFamily } from '../utils/fontFamily';
 
 const CustomButton = ({ label, onPress, style }) => {
   return (
@@ -28,8 +29,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontFamily:getFontFamily("medium")
   },
 });
 

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { TextInput, StyleSheet, View } from 'react-native';
+import { TextInput, StyleSheet, View , Dimensions} from 'react-native';
+
+const {width, height} = Dimensions
 
 const CustomTextInput = (props) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -24,11 +26,12 @@ const CustomTextInput = (props) => {
 const styles = StyleSheet.create({
   inputContainer: {
     backgroundColor: '#F1F4FF', // Background color
-    borderColor: '#ccc', // Default border color
+    borderColor: '#fff', // Default border color
     borderWidth: 1,
     borderRadius: 8, // Border radius
     padding: 10,
-    marginBottom:25
+    marginBottom:25,
+    width: '100%', 
   },
   inputFocused: {
     borderColor: '#5779B9', // Border color when focused
