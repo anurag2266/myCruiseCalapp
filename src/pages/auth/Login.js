@@ -1,154 +1,130 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import CustomButton from '../../components/CustomButton';
 import CustomTextInput from '../../components/CustomTextInput';
 import colors from '../../theme/colors';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
+import { getFontFamily } from '../../utils/fontFamily';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import auth from '@react-native-firebase/auth';
+import { setUser } from '../../redux/userSlice';
+import { useDispatch } from 'react-redux';
+import { Dimensions } from 'react-native';
 
-
-// const axiosInstance = axios.create({
-//     baseURL: 'https://cruisecal.blackbullsolution.com/api/',
-// });
+const { height } = Dimensions.get('window');
 
 const Login = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);  // Loading state
+    const [loading, setLoading] = useState(false);
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: '1034163217798-9glb7l9dpa7u6b8fde1c4nmv2uo91jan.apps.googleusercontent.com',
+        });
+    }, []);
+
+    const signInWithGoogle = async () => {
+        try {
+            const userInfo = await GoogleSignin.signIn();
+            const googleCredential = auth.GoogleAuthProvider.credential(userInfo.data.idToken);
+            const userCredential = await auth().signInWithCredential(googleCredential);
+            Toast.show({ type: 'success', position: 'top', text1: 'Login Successful', text2: 'Welcome back!' });
+            dispatch(setUser(userCredential.user));
+            navigation.navigate('Drawer');
+        } catch (error) {
+            handleGoogleSignInError(error);
+        }
+    };
+
+    const handleGoogleSignInError = (error) => {
+        if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+            console.log('User cancelled the login flow');
+        } else if (error.code === statusCodes.IN_PROGRESS) {
+            console.log('Sign in is in progress already');
+        } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+            console.log('Play services not available or outdated');
+        } else {
+            console.error(error);
+        }
+    };
 
     const validateEmail = (email) => {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  // Simple email regex pattern
+        return emailRegex.test(email);  // Returns true if email is valid, false otherwise
     };
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Toast.show({
-                type: 'error',
-                position: 'top',
-                text1: 'Validation Error',
-                text2: 'Email and Password are required.',
-            });
+            Toast.show({ type: 'error', position: 'top', text1: 'Validation Error', text2: 'Email and Password are required.' });
             return;
         }
 
         if (!validateEmail(email)) {
-            Toast.show({
-                type: 'error',
-                position: 'top',
-                text1: 'Validation Error',
-                text2: 'Please enter a valid email address.',
-            });
+            Toast.show({ type: 'error', position: 'top', text1: 'Validation Error', text2: 'Please enter a valid email address.' });
             return;
         }
-        setLoading(true);  // Start loading
 
+        setLoading(true);
         try {
-            console.log('Attempting to log in with:', { email, password });
-            const response = await axios.post('https://cruisecal.blackbullsolution.com/api/login', {
-                email,
-                password,
-            });
-            console.log('API response:', response); 
+            const response = await axios.post('https://cruisecal.blackbullsolution.com/api/login', { email, password });
             if (response.data.success) {
-                Toast.show({
-                    type: 'success',
-                    position: 'top',
-                    text1: 'Login Successful',
-                    text2: 'Welcome back!',
-                });
+                Toast.show({ type: 'success', position: 'top', text1: 'Login Successful', text2: 'Welcome back!' });
                 navigation.navigate('Drawer');
             } else {
-                Toast.show({
-                    type: 'error',
-                    position: 'top',
-                    text1: 'Login Failed',
-                    text2: response.data.message || 'An error occurred',
-                });
+                Toast.show({ type: 'error', position: 'top', text1: 'Login Failed', text2: response.data.message || 'An error occurred' });
             }
         } catch (error) {
             console.error('Error logging in:', error);
-            Toast.show({
-                type: 'error',
-                position: 'top',
-                text1: 'Login Failed',
-                text2: 'An error occurred while logging in',
-            });
+            Toast.show({ type: 'error', position: 'top', text1: 'Login Failed', text2: 'An error occurred while logging in' });
         } finally {
-            setLoading(false);  // Stop loading
+            setLoading(false);
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView>
+            <View style={styles.innerContainer}>
                 <Image source={require('../../assets/images/appLogo.png')} style={styles.logo} />
                 <Text style={styles.title}>Login here</Text>
                 <Text style={styles.subHeading}>Welcome back you’ve been missed!</Text>
-                <CustomTextInput
-                    style={{ marginBottom: 20 }}
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                />
-                <CustomTextInput
-                    placeholder="Password"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('ForgotPassword')}
-                    style={{ alignSelf: "flex-end", marginBottom: 20 }}
-                >
-                    <Text style={styles.forgotTxt}>Forgot your password?</Text>
+                <CustomTextInput placeholder="Email" value={email} onChangeText={setEmail} />
+                <CustomTextInput placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotTxt}>
+                    <Text>Forgot your password?</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.loginButton}
-                    // onPress={()=> navigation.navigate('Drawer')}
-                    onPress={handleLogin}
-                    disabled={loading} // Disable button while loading
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="white" /> // Show loader
-                    ) : (
-                        <Text style={styles.buttonText}>Login</Text> // Show login text
-                    )}
-                </TouchableOpacity>
-
+                <LinearGradient colors={['#8DC5EA', '#5879BC']} style={styles.gradientButton}>
+                    <TouchableOpacity onPress={handleLogin} disabled={loading} style={styles.loginButton}>
+                        {loading ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <Text style={styles.buttonText}>Login</Text>
+                        )}
+                    </TouchableOpacity>
+                </LinearGradient>
                 <Text style={styles.continue}>Or continue with</Text>
-
                 <View style={styles.socialContainer}>
-                    <TouchableOpacity style={styles.SocialbuttonCon}>
-                        <LinearGradient
-                            colors={['#8DC5EA', '#5879BC']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.Socialbutton}
-                        >
-                            <Image source={require('../../assets/images/realGoogle.png')} style={{ width: 40, height: 40 }} />
+                    <TouchableOpacity onPress={signInWithGoogle} style={styles.SocialbuttonCon}>
+                        <LinearGradient colors={['#8DC5EA', '#5879BC']} style={styles.Socialbutton}>
+                            <Image source={require('../../assets/images/google.png')} style={styles.socialIcon} />
                         </LinearGradient>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.SocialbuttonCon}>
-                        <LinearGradient
-                            colors={['#8DC5EA', '#5879BC']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.Socialbutton}
-                        >
-                            <Image source={require('../../assets/images/fb.png')} style={{ width: 40, height: 40 }} />
+                        <LinearGradient colors={['#8DC5EA', '#5879BC']} style={styles.Socialbutton}>
+                            <Image source={require('../../assets/images/fb.png')} style={styles.socialIcon} />
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.signupContainer}>
-                    <Text style={{ fontSize: 18 , color:"grey"}}>Don’t have an account? </Text>
+                    <Text style={styles.signupText}>Don’t have an account?</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                        <Text style={styles.signupText}>Sign Up</Text>
+                        <Text style={styles.signupLink}>Sign Up</Text>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
+            </View>
         </SafeAreaView>
     );
 };
@@ -156,75 +132,97 @@ const Login = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "flex-start",
+        justifyContent: "center",
         padding: 20,
-        backgroundColor: "white"
+        backgroundColor: "white",
+    },
+    innerContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
     },
     title: {
-        fontSize: 32,
-        marginBottom: 24,
-        alignSelf: "center",
-        fontWeight: "900",
-        color: colors.primary
+        fontSize: 28,
+        marginBottom: 16,
+        fontWeight: "bold",
+        color: colors.primary,
+        textAlign: "center",
     },
     logo: {
         height: 150,
         width: 150,
         resizeMode: "contain",
-        alignSelf: "center"
+        marginBottom: 20,
     },
     forgotTxt: {
         fontSize: 16,
-        fontWeight: "600",
-        color: colors.primary
+        color: colors.primary,
+        alignSelf: "flex-end",
+        marginBottom: 20,
     },
     subHeading: {
-        alignSelf: "center",
+        textAlign: "center",
         marginBottom: 20,
         color: "black",
-        fontSize: 18,
+        fontSize: 16,
     },
     loginButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: 15,
-        borderRadius: 8,
+        paddingVertical: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 20
+        borderRadius: 8,
     },
     buttonText: {
         color: 'white',
-        fontWeight: '600',
         fontSize: 18,
+        fontFamily: getFontFamily("medium"),
     },
     continue: {
-        margin: 25,
-        alignSelf: "center",
+        marginVertical: 25,
         color: "black",
-        fontSize: 18
+        fontSize: 16,
     },
     socialContainer: {
         flexDirection: "row",
-        justifyContent: "center"
+        justifyContent: "center",
+        marginVertical: 10,
     },
     Socialbutton: {
         padding: 15,
-        borderRadius: 12
+        borderRadius: 12,
     },
     SocialbuttonCon: {
         padding: 10,
-        borderRadius: 12
+        borderRadius: 12,
     },
     signupContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 40,
+        marginTop: 20,
     },
     signupText: {
+        fontSize: 16,
+        color: "grey",
+    },
+    signupLink: {
         color: colors.primary,
-        fontWeight: 'bold',
-        fontSize: 18
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+    gradientButton: {
+        borderRadius: 8,
+        marginVertical: 20,
+        width: '100%',
+        alignItems: 'center',
+        elevation: 5,
+    },
+    socialIcon: {
+        width: 35,
+        height: 35,
+        resizeMode: "contain",
     },
 });
 
 export default Login;
+
