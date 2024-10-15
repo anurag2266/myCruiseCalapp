@@ -12,6 +12,7 @@ import auth from '@react-native-firebase/auth';
 import { setUser } from '../../redux/userSlice';
 import { useDispatch } from 'react-redux';
 import { Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { height } = Dimensions.get('window');
 
@@ -59,31 +60,68 @@ const Login = ({ navigation }) => {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Toast.show({ type: 'error', position: 'top', text1: 'Validation Error', text2: 'Email and Password are required.' });
+            Toast.show({
+                type: 'error',
+                position: 'top',
+                text1: 'Validation Error',
+                text2: 'Email and Password are required.',
+            });
             return;
         }
 
-        if (!validateEmail(email)) {
-            Toast.show({ type: 'error', position: 'top', text1: 'Validation Error', text2: 'Please enter a valid email address.' });
-            return;
-        }
+        // if (!validateEmail(email)) {
+        //     Toast.show({
+        //         type: 'error',
+        //         position: 'top',
+        //         text1: 'Validation Error',
+        //         text2: 'Please enter a valid email address.',
+        //     });
+        //     return;
+        // }
 
         setLoading(true);
+
         try {
             const response = await axios.post('https://cruisecal.blackbullsolution.com/api/login', { email, password });
+
+            // Check if the login is successful
             if (response.data.success) {
-                Toast.show({ type: 'success', position: 'top', text1: 'Login Successful', text2: 'Welcome back!' });
+                const { token, name } = response.data.data;  // Extract the token and name from the response
+
+                // Show a success message
+                Toast.show({
+                    type: 'success',
+                    position: 'top',
+                    text1: 'Login Successful',
+                    text2: `Welcome back, ${name}!`,
+                });
+
+                // Save the token to persist login state (Optional: You can store this in AsyncStorage)
+                await AsyncStorage.setItem('userToken', token);
+                await AsyncStorage.setItem('user_name', name);
+                // Navigate to the Drawer screen
                 navigation.navigate('Drawer');
             } else {
-                Toast.show({ type: 'error', position: 'top', text1: 'Login Failed', text2: response.data.message || 'An error occurred' });
+                Toast.show({
+                    type: 'error',
+                    position: 'top',
+                    text1: 'Login Failed',
+                    text2: response.data.message || 'An error occurred',
+                });
             }
         } catch (error) {
             console.error('Error logging in:', error);
-            Toast.show({ type: 'error', position: 'top', text1: 'Login Failed', text2: 'An error occurred while logging in' });
+            Toast.show({
+                type: 'error',
+                position: 'top',
+                text1: 'Login Failed',
+                text2: 'An error occurred while logging in',
+            });
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -140,7 +178,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        padding: 20,
+        padding: 13,
     },
     title: {
         fontSize: 28,

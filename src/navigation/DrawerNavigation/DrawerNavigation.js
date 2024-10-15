@@ -7,9 +7,11 @@ import SubscribCalendar from '../../pages/screens/SubscribCalendar';
 import CustomDrawerContent from './CustomDrawerContent'; // Import the custom drawer
 import { getFontFamily } from '../../utils/fontFamily';
 import { useNavigation } from '@react-navigation/native';
-
+import EditProfile from '../../pages/auth/EditProfile';
+import { createStackNavigator } from '@react-navigation/stack';
 
 const Drawer = createDrawerNavigator();
+const Stack = createStackNavigator();
 
 const CustomHamburgerIcon = () => {
   const navigation = useNavigation(); // Hook to access the navigation object
@@ -23,6 +25,7 @@ const CustomHamburgerIcon = () => {
     </TouchableOpacity>
   );
 };
+
 
 
 const DrawerNavigation = () => {
@@ -92,6 +95,15 @@ const DrawerNavigation = () => {
           ),
         }}
       />
+
+      <Drawer.Screen
+        name="EditProfile"
+        component={EditProfile}
+        options={{
+          drawerItemStyle: { display: 'none' }, // Hide this item from the drawer
+        }}
+      />
+
     </Drawer.Navigator>
   );
 };

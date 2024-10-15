@@ -135,9 +135,15 @@ const Profile = ({ navigation }) => {
             onPress={() => setIsDropdownVisible(!isDropdownVisible)}
           >
             <Text style={styles.dropdownText}>
-              {selectedShip
+              {/* {selectedShip
                 ? selectedShip.formatted_date + " - " + selectedShip.cruise_name
-                : `Select a Ship for ${selectedCruise.title}`}
+                : `Select a Ship for ${selectedCruise.title}`} */}
+              {selectedShip?.formatted_date} - {selectedShip?.cruise_name.replace(
+                "from/to",
+                selectedShip?.from_port_code === selectedShip?.to_port_code
+                  ? "Round Trip"
+                  : `${selectedShip?.from_port_code}/${selectedShip?.to_port_code}`
+              )} - ({selectedShip?.duration} Nights)
             </Text>
           </TouchableOpacity>
         )}

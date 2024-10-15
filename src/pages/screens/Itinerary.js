@@ -18,9 +18,7 @@ import { getFontFamily } from '../../utils/fontFamily';
 import CustomButton from '../../components/CustomButton';
 import LinearGradient from 'react-native-linear-gradient';
 import { format, addDays } from 'date-fns';
-import { check, PERMISSIONS, RESULTS } from 'react-native-permissions';
-
-
+import { check, PERMISSIONS, request, RESULTS } from 'react-native-permissions';
 
 
 const axiosInstance = axios.create({
@@ -77,11 +75,13 @@ const Itinerary = ({ navigation, route }) => {
         }
 
         try {
+            console.log("gvhjbkjhvgbjn")
             for (const item of itineraryData) {
                 // Calculate the event date based on the base date and the day's offset
                 const eventDate = calculateDate(date, parseInt(item.day, 10)); // Convert day to integer
                 const startDate = new Date(eventDate + 'T' + (item.arrival || item.departure)).toISOString(); // Use arrival time as start time
                 const endDate = new Date(startDate); // Create end date based on start date
+                console.log("6676767", eventDate, startDate, endDate)
                 if (item.departure) {
                     endDate.setHours(endDate.getHours() + 1); // Add 1 hour to the arrival time for the event duration
                 } else {
@@ -94,6 +94,7 @@ const Itinerary = ({ navigation, route }) => {
                     endDate: endDate.toISOString(),
                     description: `Port: ${item.port || '-'}, Arrival: ${item.arrival || '-'}, Departure: ${item.departure || '-'}`,
                 });
+                console.log('date:', startDate, endDate);
             }
             Alert.alert('Success', 'Event saved to calendar successfully!');
             console.log('Event ID:', eventId);
@@ -105,11 +106,33 @@ const Itinerary = ({ navigation, route }) => {
     };
 
 
+    // const handleSave = async () => {
+    //     const hasPermission = await checkCalendarPermission();
+    //     if (!hasPermission) {
+    //         Alert.alert('Calendar Permission Denied', 'Unable to save event to calendar. Please grant calendar permissions in app settings.');
+    //         return;
+    //     }
+
+    //     // Add event to calendar
+    //     try {
+    //         await CalendarEvents.saveEvent('Cruise Itinerary', {
+    //             startDate: new Date().toISOString(), // Use actual date and time for events
+    //             endDate: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+    //             description: `Cabin: ${cabinNumber}, Booking: ${bookingNumber}`,
+    //         });
+    //         alert('Event saved to calendar');
+    //     } catch (error) {
+    //         console.error(error);
+    //         alert('Failed to save event');
+    //     }
+    //     setIsModalVisible(false);
+    // };
 
     const calculateDate = (baseDate, dayOffset) => {
         const parsedDate = new Date(baseDate);
         return format(addDays(parsedDate, dayOffset), 'MMM-dd-yyyy'); // Adjust format as needed
     };
+
 
     return (
         <View style={styles.container}>
