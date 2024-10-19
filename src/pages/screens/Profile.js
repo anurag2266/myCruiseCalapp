@@ -69,6 +69,8 @@ const Profile = ({ navigation }) => {
       }
     } else {
       setFilteredData([]);
+      setSelectedShip(null)
+      setSelectedCruise(null);
     }
   };
 
@@ -79,10 +81,10 @@ const Profile = ({ navigation }) => {
         ship_code: shipCode,
       });
       setShips(response.data.data);
+      console.log(response.data.data);
 
       if (response.data.data.length > 0) {
         setSelectedTourCode(response.data.data[0].tour_code);
-        setDate(response.data.data[0].departure_date);
         setHeading(response.data.data[0].cruise_name);
         setDuration(response.data.data[0].duration);
       }
@@ -94,7 +96,6 @@ const Profile = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View>
-
 
         <Text style={styles.text}>The easy way to add your cruise itinerary to your calendar</Text>
 
@@ -135,15 +136,14 @@ const Profile = ({ navigation }) => {
             onPress={() => setIsDropdownVisible(!isDropdownVisible)}
           >
             <Text style={styles.dropdownText}>
-              {/* {selectedShip
-                ? selectedShip.formatted_date + " - " + selectedShip.cruise_name
-                : `Select a Ship for ${selectedCruise.title}`} */}
-              {selectedShip?.formatted_date} - {selectedShip?.cruise_name.replace(
-                "from/to",
-                selectedShip?.from_port_code === selectedShip?.to_port_code
-                  ? "Round Trip"
-                  : `${selectedShip?.from_port_code}/${selectedShip?.to_port_code}`
-              )} - ({selectedShip?.duration} Nights)
+              {selectedShip
+                ? `${selectedShip.formatted_date} - ${selectedShip.cruise_name.replace(
+                  "from/to",
+                  selectedShip.from_port_code === selectedShip.to_port_code
+                    ? "Round Trip"
+                    : `${selectedShip.from_port_code}/${selectedShip.to_port_code}`
+                )} - (${selectedShip.duration} Nights)`
+                : 'Select a Ship'}
             </Text>
           </TouchableOpacity>
         )}
@@ -159,6 +159,9 @@ const Profile = ({ navigation }) => {
                   style={styles.dropdownItem}
                   onPress={() => {
                     setSelectedShip(item);
+                    setDate(item.departure_date)
+                    setHeading(item.cruise_name);
+                    setDuration(item.duration);
                     setIsDropdownVisible(false);
                   }}
                 >

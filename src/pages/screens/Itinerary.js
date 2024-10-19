@@ -28,6 +28,8 @@ const axiosInstance = axios.create({
 const Itinerary = ({ navigation, route }) => {
     const { tourCode, date, heading1, duration1 } = route.params;
 
+    console.log("date", date);
+
     const [itineraryData, setItineraryData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -43,6 +45,7 @@ const Itinerary = ({ navigation, route }) => {
         try {
             const response = await axiosInstance.post('/itinary', { tour_code: tourCode }); // Adjust endpoint and request body as needed
             setItineraryData(response.data.data); // Adjust based on your API response
+            console.log("gvhdjkhbvbd", response.data.data);
         } catch (error) {
             setError('Failed to fetch itinerary data');
             console.error(error);
@@ -67,6 +70,24 @@ const Itinerary = ({ navigation, route }) => {
         }
     };
 
+    const requestCalendarPermissions = async () => {
+        try {
+            const readPermission = await request(PERMISSIONS.ANDROID.READ_CALENDAR);
+            const writePermission = await request(PERMISSIONS.ANDROID.WRITE_CALENDAR);
+
+            if (readPermission === RESULTS.GRANTED && writePermission === RESULTS.GRANTED) {
+                return true;
+            } else {
+                Alert.alert('Permissions Required', 'Calendar permissions are needed to save events.');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error requesting calendar permissions:', error);
+            return false;
+        }
+    };
+
+
     const handleSave = async () => {
         const hasPermission = await checkCalendarPermission();
         if (!hasPermission) {
@@ -75,63 +96,77 @@ const Itinerary = ({ navigation, route }) => {
         }
 
         try {
-            console.log("gvhjbkjhvgbjn")
-            for (const item of itineraryData) {
-                // Calculate the event date based on the base date and the day's offset
-                const eventDate = calculateDate(date, parseInt(item.day, 10)); // Convert day to integer
-                const startDate = new Date(eventDate + 'T' + (item.arrival || item.departure)).toISOString(); // Use arrival time as start time
-                const endDate = new Date(startDate); // Create end date based on start date
-                console.log("6676767", eventDate, startDate, endDate)
-                if (item.departure) {
-                    endDate.setHours(endDate.getHours() + 1); // Add 1 hour to the arrival time for the event duration
-                } else {
-                    endDate.setHours(endDate.getHours() + 1); // Default to 1 hour if no departure time is given
+            console.log("Itinerary Data:", itineraryData);
+
+            // Create an array of promises for saving events
+            const savePromises = itineraryData.map(async (item) => {
+                // Calculate the full-day event date using the base date and the day's offset
+                const baseDate = new Date(date); // Ensure 'date' is valid
+                if (!isValidDate(baseDate)) {
+                    throw new Error('Base date is invalid');
                 }
 
-                // Save the event to the calendar
-                await CalendarEvents.saveEvent('Cruise Itinerary', {
-                    startDate,
-                    endDate: endDate.toISOString(),
-                    description: `Port: ${item.port || '-'}, Arrival: ${item.arrival || '-'}, Departure: ${item.departure || '-'}`,
+                const eventDate = calculateDate(baseDate, parseInt(item.day, 10));
+
+                // Check if the calculated eventDate is valid
+                if (!isValidDate(eventDate)) {
+                    console.error('Invalid event date:', eventDate);
+                    throw new Error(`Invalid event date for day: ${eventDate}`);
+                }
+
+                // Use the eventDate as both start and end date (for full-day events)
+                const startDate = new Date(eventDate); // Start of the day
+                startDate.setHours(0, 0, 0, 0); // Set to midnight
+
+                const endDate = new Date(eventDate); // End of the day
+                endDate.setHours(23, 59, 59, 999); // Set to end of the day
+
+                console.log('Saving full-day event:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });
+
+                // Save the full-day event to the calendar
+                return CalendarEvents.saveEvent('Cruise Itinerary', {
+                    startDate: startDate.toISOString(), // Use the start date in ISO format
+                    endDate: endDate.toISOString(), // Use the end date in ISO format
+                    allDay: true, // This marks it as a full-day event
+                    description: `Port Name: ${item.port || '-'} ,Details: URL - http://cruisecal.com, Cruise Name: Port Williamsom `,
                 });
-                console.log('date:', startDate, endDate);
-            }
-            Alert.alert('Success', 'Event saved to calendar successfully!');
-            console.log('Event ID:', eventId);
+            });
+
+            // Wait for all save operations to complete
+            const eventIds = await Promise.all(savePromises);
+            console.log('Full-day events saved with IDs:', eventIds);
+
+            Alert.alert('Success', 'Full-day itinerary events saved to calendar successfully!');
         } catch (error) {
-            console.error('Error saving event to calendar:', error);
-            Alert.alert('Failed to save event', error.message || 'An error occurred while saving the event to the calendar.');
+            console.error('Error saving full-day event to calendar:', error);
+            Alert.alert('Failed to save full-day events', error.message || 'An error occurred while saving the full-day events.');
         }
+
         setIsModalVisible(false);
     };
 
 
-    // const handleSave = async () => {
-    //     const hasPermission = await checkCalendarPermission();
-    //     if (!hasPermission) {
-    //         Alert.alert('Calendar Permission Denied', 'Unable to save event to calendar. Please grant calendar permissions in app settings.');
-    //         return;
-    //     }
 
-    //     // Add event to calendar
-    //     try {
-    //         await CalendarEvents.saveEvent('Cruise Itinerary', {
-    //             startDate: new Date().toISOString(), // Use actual date and time for events
-    //             endDate: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
-    //             description: `Cabin: ${cabinNumber}, Booking: ${bookingNumber}`,
-    //         });
-    //         alert('Event saved to calendar');
-    //     } catch (error) {
-    //         console.error(error);
-    //         alert('Failed to save event');
-    //     }
-    //     setIsModalVisible(false);
-    // };
+
+    const calculateDateShow = (baseDate, dayOffset) => {
+        const parsedDate = new Date(baseDate); // Parse the base date
+        return format(addDays(parsedDate, dayOffset - 1), 'MMM-dd-yyyy'); // Subtract 1 from dayOffset since day 1 is baseDate
+    };
 
     const calculateDate = (baseDate, dayOffset) => {
-        const parsedDate = new Date(baseDate);
-        return format(addDays(parsedDate, dayOffset), 'MMM-dd-yyyy'); // Adjust format as needed
+        const parsedDate = new Date(baseDate); // Parse the base date
+
+        // Add the day offset (dayOffset should be a number)
+        const calculatedDate = addDays(parsedDate, dayOffset - 1); // Subtract 1 since day 1 is baseDate
+
+        return calculatedDate; // Return a Date object
     };
+
+
+    const isValidDate = (date) => {
+        return date instanceof Date && !isNaN(date);
+    };
+
 
 
     return (
@@ -158,7 +193,7 @@ const Itinerary = ({ navigation, route }) => {
                     keyExtractor={(item) => item.date}
                     renderItem={({ item }) => (
                         <View style={styles.row}>
-                            <Text style={styles.cell}>{calculateDate(date, item.day)}</Text>
+                            <Text style={styles.cell}>{calculateDateShow(date, item.day)}</Text>
                             <Text style={styles.cell}>{item.port || '-'}</Text>
                             {/* <Text style={styles.cell}>{item.arrival || '-'}</Text>
                             <Text style={styles.cell}>{item.departure || '-'}</Text> */}
