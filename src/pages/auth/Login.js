@@ -132,7 +132,7 @@ const Login = ({ navigation }) => {
                 <CustomTextInput placeholder="Email" value={email} onChangeText={setEmail} />
                 <CustomTextInput placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
                 <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotTxt}>
-                    <Text>Forgot your password?</Text>
+                    <Text style={{color:"black"}}>Forgot your password?</Text>
                 </TouchableOpacity>
                 <LinearGradient colors={['#8DC5EA', '#5879BC']} style={styles.gradientButton}>
                     <TouchableOpacity onPress={handleLogin} disabled={loading} style={styles.loginButton}>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         marginBottom: 16,
-        fontWeight: "bold",
+        fontWeight:"900",
         color: colors.primary,
         textAlign: "center",
     },
